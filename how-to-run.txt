@@ -1,0 +1,14 @@
+# Install
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+#Run
+source venv/bin/activate
+
+On first terminal run the app:
+uvicorn main:app --host 0.0.0.0 --port 8082 --reload
+uvicorn hebrew-case:app --host 0.0.0.0 --port 8082 --reload
+
+On second terminal run the ngrok:
+ngrok http http://localhost:8082

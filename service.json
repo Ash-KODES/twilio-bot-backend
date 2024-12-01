@@ -1,0 +1,13 @@
+{
+    "type": "service_account",
+    "project_id": "twilio-phone-manager",
+    "private_key_id": "af3201cebe76112b7bf2f0235131b78a77ec36b2",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCcsRvSEXhuMBCV\ny4+9GgfJzxifliZFPIFROqbaU9h+p4C9/IxV1BE4ZwYI4Zc0N1au/IjdQC17QKjG\n6EtTlnaiuRTEpvuKI46kQCZhNKyLZ24qLdQg4pUat0viNjKsNs6jf+CI+F00CDIe\naMDeb+4sXD/U9yRcZFO519MqgkSb4/sXEL/u/MaIFsxRMY997qe6/OIrT0NnNiJx\nes20IJZv672UYWNXEnbMAnZZkgWGshyJnxWtpCIZzPVf1A8dT/iseomkwC6SdGIw\n39CWwX8k8dxtblVdi8v7s08Zad7/SMRd16UDYCFLI5bZRcwGda2CZEJJy+mAqBb0\nrUxo5WvZAgMBAAECggEAFIFm+yQ3JvBaU0ga7OvZphLYjZXoNzpWUAuFZ1/+noCM\nLBC/SsIgaMmus/3VvEsbqHW68X1jFlSdYb5nkS5JIz1mVt/lXiwOEDem7iSnCe1E\nsPdjYdRVH/Rp1VYzZm8btrDW8QXTqKoD6Q/bYaCzQhHmdpfLJd4pSNJSO6dllCLa\nnAxSOv+qmuFPTgKCkERBwS+Vok+uZRD0a47RrhP/YZv2HH5h+VQZkPVGFZrZolHp\nXatseNvcXtvlR1uJ6APJ5urhizWg1QsNS0mocieLC2gktsL/PISEUrR5HQaLU9yB\nHNAOHRKfGY+j6MUQ0ZbPKQC+HWgdlwrxR1PCw0492wKBgQDXQWQfbkxDOOHestvK\njAqrjJTpvhk0PebqeatR6ABT2MseV8AvAaqPYfTbZw1wzf1Cbx+Vm+dp7tah6q3h\n34FZjH2Y2yeZ1Zxu9eZGyTwvOXm62OgDdvUF6+gcbraPkUTB+7eFHsoRiYKyJmO8\n4mA5lTU4H0Q6NHnIm0xrBAqi/wKBgQC6WehREJ/ed4U3bPDCEjUdMiwCVu802nAc\n1bsPTJ7lTxtB7iCC63RiTQeeiGgZDU/lpxQGUlmwQFN+3Y0tgiuiMXibLYZ9w4St\nHq3oqyZi65FwhMm4Es193YEWmAZxswBxcSZCwLNePSbEXCwkSMtUj5Czv7GMT1Bm\nIXhWzZRpJwKBgQC0HjSglFPeQB/IkJOX9f0LtVP6DybZ7x5lf6/alq6HerXkSvs2\nmkdVOVuBp8a4aLWOPJwKPW2z17XjwRMFGVgMTaHfISsO7465zquE+eiRf5+buNrT\n41t+O/t6py2+DomhZHcZPj1J1W32kmcM68QnCvKAZrFZnwV01nZoafZYkwKBgGs5\n/JFYrYTG5SKFTut8qo9IJUabWzzgTA5rdR1Si0OLBzYinRZ4ARnnFPFFsBBqNoUA\nZGdWz0C5YtHnDasX8Z98M9emlHKdJCSxOIReptHYlnFWFvQR7af04qhrhZm61BBy\neP+D/jHFoh7uon+mW0km6q5jKPiBUtPRgnsAA9uVAoGBAJfcIjk1T/AH5Ikflj8Q\nJkpg0hqBVUBynFqsUDAbeW08ol3xtKxIAfpuBnFZV/8w+0ep0vis+qE6nbI/05zl\nvGfnaP/LZ8xgqLZIf44/xx61wWYL4xGDzXBzyiGm6JszoZWCfbrH0XO1Di1LAX/h\nfPVAdLAQjna8ezyaM4RGg82v\n-----END PRIVATE KEY-----\n",
+    "client_email": "firebase-adminsdk-h0hp6@twilio-phone-manager.iam.gserviceaccount.com",
+    "client_id": "107535605843883807686",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-h0hp6%40twilio-phone-manager.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+}
