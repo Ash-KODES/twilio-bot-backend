@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import json
 import base64
@@ -15,39 +16,106 @@ from pydub import AudioSegment
 from pydub.silence import detect_nonsilent
 import audioop
 import wave
-
+import wave
+from collections import defaultdict
 import argparse
 
-client = os.getenv("CLIENT", "bruntwork")
+client = os.getenv("CLIENT", "Insait")
 load_dotenv()
 
 
 async def fetch_active_prompt():
-    prompt_doc = db.collection("prompts").document("active").get()
-    if prompt_doc.exists:
-        return prompt_doc.to_dict().get("prompt", "Default system prompt.")
-    return "Default system prompt."
+    """
+    Fetch the active prompt from Firestore based on the new Prompt schema.
+
+    Returns:
+        tuple: A tuple containing the prompt name and content,
+               or default values if no active prompt is found.
+    """
+    try:
+        # Query for the active prompt
+        prompt_query = db.collection("prompts").where("isActive", "==", True).limit(1)
+        prompt_docs = prompt_query.stream()
+
+        # Iterate through the query results
+        for doc in prompt_docs:
+            prompt_data = doc.to_dict()
+            return {
+                "name": prompt_data.get("name", "Default Prompt"),
+                "content": prompt_data.get("content", "Default system prompt."),
+            }
+
+        # If no active prompt is found, return default values
+        return {"name": "Default Prompt", "content": "Default system prompt."}
+    except Exception as e:
+        print(f"Error fetching active prompt: {e}")
+        return {"name": "Default Prompt", "content": "Default system prompt."}
 
 
+# Function to store phone call data in Firestore
 async def store_phone_call(phone_call_data):
-    call_id = db.collection("phone_calls").add(phone_call_data)[1].id
-    return call_id
+    """
+    Store phone call data in Firestore and upload audio to Firebase Storage
+
+    Args:
+        phone_call_data (dict): Dictionary containing phone call details
+
+    Returns:
+        str: Firestore document ID of the stored phone call
+    """
+    try:
+        # Add timestamp if not provided
+        if "timestamp" not in phone_call_data:
+            phone_call_data["timestamp"] = datetime.now()
+
+        # Add call document to Firestore
+        call_ref = db.collection("phone_calls").add(phone_call_data)[1]
+
+        return call_ref.id
+    except Exception as e:
+        print(f"Error storing phone call: {e}")
+        return None
 
 
+# Function to upload audio to Firebase Storage
 def upload_audio_to_storage(local_file_path, destination_blob_name):
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(local_file_path)
-    return blob.public_url
+    """
+    Upload audio file to Firebase Storage
 
+    Args:
+        local_file_path (str): Local path of the audio file
+        destination_blob_name (str): Destination path in Firebase Storage
 
-# Configuration
+    Returns:
+        str: Public URL of the uploaded file
+    """
+    try:
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(local_file_path)
+
+        # Make the blob publicly accessible
+        blob.make_public()
+
+        return blob.public_url
+    except Exception as e:
+        print(f"Error uploading audio to storage: {e}")
+        return None
+
+global_phone_call_data = {
+    "number": None,
+    "timestamp": None,
+    "duration": 0,
+    "transcript": "",
+    "audioUrl": "",
+    "promptName": "",
+}
+
+# Transcript accumulation
+current_transcript = []
+
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-# PORT = int(os.getenv('PORT', 5050))
-# Always start with: Hello! I’m Paul, Bruntworks’ customer service representative. Are you calling to hire, speak with your Customer Success Manager, or inquire about a job opportunity with Bruntwork?
-#
 PORT = 8082
-# SYSTEM_MESSAGE =
-SYSTEM_MESSAGE = ""
+SYSTEM_MESSAGE = None
 
 # ash, ballad, coral, sage and verse
 VOICE = 'coral'
@@ -63,9 +131,6 @@ app = FastAPI()
 
 if not OPENAI_API_KEY:
     raise ValueError('Missing the OpenAI API key. Please set it in the .env file.')
-
-import wave
-from collections import defaultdict
 
 # Dictionary to manage WAV files for each call
 merged_audio_files = {}
@@ -115,10 +180,23 @@ async def handle_incoming_call(request: Request):
 
     form_data = await request.form()  # Extract form data sent by Twilio
     caller_phone_number = form_data.get("From")  # Get the caller's phone number
-
     active_prompt = await fetch_active_prompt()
+    global global_phone_call_data, current_transcript
+    global_phone_call_data = {
+        "number": None,
+        "timestamp": datetime.now(),
+        "duration": 0,
+        "transcript": "",
+        "audioUrl": "",
+        "promptName": active_prompt["name"],
+    }
+    current_transcript = []
+    global_phone_call_data["number"] = caller_phone_number
+
     print(f"Active Prompt: {active_prompt}")
-    SYSTEM_MESSAGE = active_prompt
+
+    global SYSTEM_MESSAGE
+    SYSTEM_MESSAGE = active_prompt["content"]
 
     response = VoiceResponse()
     # <Say> punctuation to improve text-to-speech flow
@@ -136,12 +214,12 @@ async def handle_incoming_call(request: Request):
 @app.websocket("/media-stream")
 async def handle_media_stream(websocket: WebSocket):
     """Handle WebSocket connections between Twilio and OpenAI."""
+    global global_phone_call_data, current_transcript
+
     print("Client connected")
     await websocket.accept()
 
     stream_sid = None
-    client_audio_path = None
-    transcript = ""
 
     async with websockets.connect(
         'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01',
@@ -158,7 +236,7 @@ async def handle_media_stream(websocket: WebSocket):
         last_assistant_item = None
         mark_queue = []
         response_start_timestamp_twilio = None
-        
+
         async def receive_from_twilio():
             """Receive audio data from Twilio and send it to the OpenAI Realtime API."""
             nonlocal stream_sid, latest_media_timestamp
@@ -176,7 +254,6 @@ async def handle_media_stream(websocket: WebSocket):
                             pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)  # Convert to 16-bit PCM
                             client_audio_files[stream_sid]["file"].writeframes(pcm_audio)
                             merged_audio_files[stream_sid]["file"].writeframes(pcm_audio)
-                            
 
                         audio_append = {
                             "type": "input_audio_buffer.append",
@@ -218,9 +295,23 @@ async def handle_media_stream(websocket: WebSocket):
                         client_audio_files[stream_sid]["file"].close()
                         bot_audio_files[stream_sid]["file"].close()
 
+                        trimmed_path = merged_audio_files[stream_sid][
+                            "filename"
+                        ].replace(".wav", "_trim.wav")
                         remove_silence(merged_audio_files[stream_sid]["filename"], merged_audio_files[stream_sid]["filename"].replace('.wav','_trim.wav'))
                         merged_audio_files[stream_sid]["file"].close()
 
+                        audio_url = upload_audio_to_storage(trimmed_path, f"phone_calls/{os.path.basename(trimmed_path)}")
+
+                        # # Update global phone call data
+                        global_phone_call_data.update({
+                            'audioUrl': audio_url,
+                            'duration': (datetime.now() - global_phone_call_data['timestamp']).total_seconds(),
+                            'transcript': ' '.join(current_transcript)
+                        })
+
+                        # # Store phone call in Firestore
+                        call_id = await store_phone_call(global_phone_call_data)
                         del client_audio_files[stream_sid]
                         del bot_audio_files[stream_sid]
                         del merged_audio_files[stream_sid]
@@ -229,8 +320,6 @@ async def handle_media_stream(websocket: WebSocket):
                 print("Client disconnected.")
                 if openai_ws.open:
                     await openai_ws.close()
-
-
 
         async def send_to_twilio():
             """Receive events from the OpenAI Realtime API, send audio back to Twilio."""
@@ -282,6 +371,15 @@ async def handle_media_stream(websocket: WebSocket):
                         print("Input Audio Transcription Completed Message")
                         print(f"  Id: {response.get('item_id')}")
                         print(f"  Content Index: {response.get('content_index')}")
+                        transcript_text = response.get("transcript", "")
+                        if transcript_text:
+                            # # Accumulate transcript
+                            current_transcript.append(transcript_text)
+
+                            # # Update global phone call data transcript
+                            global_phone_call_data["transcript"] = " ".join(
+                                current_transcript
+                            )
                         print(f"  Transcript: {response.get('transcript')}")
             except Exception as e:
                 print(f"Error in send_to_twilio: {e}")
