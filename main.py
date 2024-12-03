@@ -328,7 +328,7 @@ async def handle_media_stream(websocket: WebSocket):
                 async for openai_message in openai_ws:
                     response = json.loads(openai_message)
                     if response['type'] in LOG_EVENT_TYPES:
-                        # print(f"Received event: {response['type']}", response)
+                        print(f"Received event: {response['type']}")
                         print(f"Received event: {response['type']}")
 
                     if response.get('type') == 'response.audio.delta' and 'delta' in response:
@@ -371,16 +371,24 @@ async def handle_media_stream(websocket: WebSocket):
                         print("Input Audio Transcription Completed Message")
                         print(f"  Id: {response.get('item_id')}")
                         print(f"  Content Index: {response.get('content_index')}")
-                        transcript_text = response.get("transcript", "")
-                        if transcript_text:
-                            # # Accumulate transcript
-                            current_transcript.append(transcript_text)
+                        transcript_text_client = response.get("transcript", "")
+                        if transcript_text_client:
+                            current_transcript.append(f"client: {transcript_text_client}")
+                            global_phone_call_data["transcript"] = " ".join(current_transcript)
+                            
+                        print(f"  Transcript client: {response.get('transcript')}")
+                    if response.get('type') == 'response.done':
+                        print(response)
+                        output = response.get('response', {}).get('output', [])
+                        transcript_text_bot = next(
+                                (content['transcript'] for item in output for content in item.get('content', []) if 'transcript' in content),
+                                    None
+                                )
+                        if transcript_text_bot:
+                            current_transcript.append(f"bot: {transcript_text_bot}")
+                            global_phone_call_data["transcript"] = " ".join(current_transcript)
 
-                            # # Update global phone call data transcript
-                            global_phone_call_data["transcript"] = " ".join(
-                                current_transcript
-                            )
-                        print(f"  Transcript: {response.get('transcript')}")
+                        print(f"  Transcript bot: {transcript_text_bot}")
             except Exception as e:
                 print(f"Error in send_to_twilio: {e}")
 
